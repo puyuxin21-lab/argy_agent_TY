@@ -84,19 +84,23 @@ class AllergyAgentAI:
             return "知识库尚未建立，请联系管理员重建知识库。"
 
         #检索
-        retriever = self.vectorstore.as_retriever(search_kwargs={"k": 4})
+        retriever = self.vectorstore.as_retriever(search_kwargs={"k": 3})
 
         #生成
-        llm = ChatOpenAI(model="gpt-3.5-turbo",temperature=0.2)
+        llm = ChatOpenAI(model="gpt-3.5-turbo",temperature=0.1)
 
         template = """
-                你是一位儿科过敏专科营养师“敏宝守护者”。
-                【参考资料】：
-                {context}
+                你是一个严格且专业的知识库问答助手，名叫“敏宝守护者”。
+            
+                🔴 严禁事项：
+                1. **严禁**使用你的训练数据（通用常识）来回答问题。
+                2. **必须且只能**基于下方的【参考资料】进行回答。
+                3. 如果【参考资料】中没有包含问题的答案，请直接回复：“抱歉，我的本地知识库中暂时没有关于这个问题的记录。”，不要编造。
+                    {context}
 
-                家长的问题：{question}
+                    家长的问题：{question}
 
-                请温柔、专业地回答。如果资料里没有，请直说不知道。
+                    请温柔、专业地回答。如果资料里没有，请直说不知道。
                 """
         prompt = ChatPromptTemplate.from_template(template)
 
