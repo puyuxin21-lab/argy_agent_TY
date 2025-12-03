@@ -1,0 +1,32 @@
+.env
+.env.local
+
+2. 屏蔽虚拟环境
+
+venv/
+.venv/
+backend/venv/
+env/
+
+3. 屏蔽 Python 缓存和编译文件
+
+pycache/
+*.py[cod]
+*$py.class
+
+4. 屏蔽 IDE 配置文件 (PyCharm/VSCode)
+
+.idea/
+.vscode/
+*.swp
+
+5. 屏蔽本地数据存储 (让使用者自己生成)
+
+faiss_index_store/
+backend/faiss_index_store/
+chat_history_log.csv
+
+6. 屏蔽系统文件
+
+.DS_Store
+Thumbs.db
