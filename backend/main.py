@@ -12,7 +12,7 @@ from database import engine,get_db
 
 # 3. 引入路由模块 (分机号)
 # 注意：你需要确保 backend/routers/admin.py 文件存在，否则这里会报错
-from router import admin
+from routers import admin
 
 #自动创建数据表
 #这一步会自动在根目录生成 chat_history.db 文件

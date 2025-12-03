@@ -4,9 +4,9 @@ import shutil
 import os
 from typing import List
 #引入核心模块
-from backend.database import get_db
-import backend.models
-from backend.core import ai_engine,DATA_PATH
+from database import get_db
+import models
+from core import ai_engine,DATA_PATH
 
 #创建路由实例
 router = APIRouter(
@@ -79,13 +79,13 @@ async def get_chat_logs(
     :param size: 每页条数
     """
     offset = (page - 1) * size
-    logs = db.query(backend.models.ChatLog)\
-             .order_by(backend.models.ChatLog.created_at.desc())\
+    logs = db.query(models.ChatLog)\
+             .order_by(models.ChatLog.created_at.desc())\
              .offset(offset)\
              .limit(size)\
              .all()
 
-    total = db.query(backend.models.ChatLog) .count()
+    total = db.query(models.ChatLog) .count()
 
     return {
         "total": total,
