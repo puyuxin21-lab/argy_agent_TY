@@ -1,11 +1,21 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import uvicorn
+from starlette.middleware.cors import CORSMiddleware
+
 # 导入我们在core.py中写好的AI引擎
 from core import ai_engine
 
 app = FastAPI(title="敏宝无忧 API",version="1.0.0")
 
+#配置允许跨域
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],#允许所有来源
+    allow_credentials=True,
+    allow_methods=["*"],#允许所有方法
+    allow_headers=["*"],#允许所有Header
+)
 # --- =定义数据模型(Pydantic) ---
 # 这相当于定义了前端必须要传给后端的数据格式
 class ChatRequest(BaseModel):
