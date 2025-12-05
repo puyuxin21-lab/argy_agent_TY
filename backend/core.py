@@ -1,6 +1,6 @@
 import os
 # ✅ 正确的写法
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from langchain_community.document_loaders import DirectoryLoader, TextLoader,PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -25,6 +25,11 @@ LOCAL_MODEL_NAME = os.getenv("LOCAL_MODEL_NAME")
 
 class AllergyAgentAI:
     def __init__(self):
+        """初始化"""
+        #默认LLM配置（存放在内存中）
+        self.current_llm_model = "gpt-3.5-turbo"
+        self.current_llm_temperature = 0.2
+
         """初始化时加载本地模型"""
         print(f"[AI Core] 正在加载本地模型: {LOCAL_MODEL_NAME} ...")
         try:
@@ -38,6 +43,23 @@ class AllergyAgentAI:
             self.embeddings = None
         self.vectorstore = None
         self.load_vector_store()#尝试加载已有索引
+
+    #更新配置的方法
+    def update_llm_config(self,model: str = None,temperature: float = None):
+        if model:
+            self.current_llm_model = model
+        if temperature is not None:
+            #限制温度范围 0.0 - 2.0
+            self.current_llm_temperature = max(0.0,min(2.0,temperature))
+        print(f"[Config] 配置已更新：Model={self.current_llm_model},Temp={self.current_llm_temperature}")
+        return self.get_llm_config()
+
+    #获取当前配置
+    def get_llm_config(self):
+        return {
+            "model":self.current_llm_model,
+            "temperature":self.current_llm_temperature
+        }
 
     def load_vector_store(self):
         """尝试从硬盘加载索引"""
@@ -55,20 +77,44 @@ class AllergyAgentAI:
             print("[AI Core] 未找到本地索引，请先执行重建知识库")
 
     def rebuild_knowledge_base(self):
-        """重建知识库(ETL 流程)"""
+        """重建知识库(ETL 流程 支持TXT和PDF)"""
+        print(f"[AI Core] 重建中... 读取目录：{os.path.abspath(DATA_PATH)}")
+
+        if not self.embeddings:
+            return {"status":"error","message":"模型未加载"}
+
         if not os.path.exists(DATA_PATH):
-            os.makedirs(DATA_PATH)
-            return {"status":"error","message":f"未找到数据目录{DATA_PATH}"}
+            try:
+                os.makedirs(DATA_PATH)
+            except:
+                return {"status":"error","message":"创建data文件夹失败"}
 
-        #1.读取
-        loader = DirectoryLoader(DATA_PATH,glob="**/*.txt",loader_cls=TextLoader,loader_kwargs={"encoding": "utf-8"})
-        docs = loader.load()
+        docs = []
+
+        #遍历目录，区分处理不同格式的文件
+        try:
+            for filename in os.listdir(DATA_PATH):
+                file_path = os.path.join(DATA_PATH, filename)
+
+                if filename.lower().endswith(".txt"):
+                    #加载TXT
+                    loader = TextLoader(file_path,encoding="utf-8")
+                    docs.extend(loader.load())
+
+                elif filename.lower().endswith(".pdf"):
+                    #加载PDF
+                    loader = PyPDFLoader(file_path)
+                    docs.extend(loader.load())
+        except Exception as e:
+            return {"status":"error","message":f"文件读取失败{e}"}
+
         if not docs:
-            return {"status":"warning","message":"数据目录为空"}
+            return {"status":"warning","message":"data 目录没有可识别的文件 ( .txt/.pdf)"}
 
-        #2.切分
+        #2.切分 （pdf通常内容较多，Chunk Size 保持400比较合适）
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=400,chunk_overlap=50)
         splits = text_splitter.split_documents(docs)
+
 
         #3.向量化并保存
         try:
